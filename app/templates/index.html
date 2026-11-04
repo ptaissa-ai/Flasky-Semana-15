@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Flasky | Início{% endblock %}
+{% block content %}
+<section class="welcome mb-4">
+  <p class="eyebrow mb-2">PAINEL DE CADASTRO</p>
+  <h1>Olá, {{ visitor_name }}!</h1>
+  <p class="mb-0">Prazer em conhecê-lo! Cadastre e gerencie os usuários do sistema.</p>
+</section>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <section class="panel h-100">
+      <h2 class="section-title">Novo usuário</h2>
+      <p class="text-secondary small">Preencha os campos para realizar um cadastro.</p>
+      <form method="POST" action="{{ url_for('main.index') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">{{ form.name.label(class="form-label") }}
+          {{ form.name(class="form-control", placeholder="Digite o nome") }}
+          {% for error in form.name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="mb-3">{{ form.email.label(class="form-label") }}
+          {{ form.email(class="form-control", placeholder="nome@exemplo.com") }}
+          {% for error in form.email.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+        {{ form.submit(class="btn btn-primary w-100") }}
+      </form>
+      <div class="hint mt-3">Após o cadastro, o sistema tenta notificar o administrador por e-mail.</div>
+    </section>
+  </div>
+
+  <div class="col-lg-7">
+    <section class="panel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div><h2 class="section-title mb-1">Relação de usuários</h2>
+          <p class="text-secondary small mb-0">{{ users|length }} usuário(s) cadastrado(s)</p></div>
+        <span class="count-pill">{{ users|length }}</span>
+      </div>
+      {% if users %}
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Nome do usuário</th><th>E-mail</th><th>Função</th><th class="text-end">Ações</th></tr></thead>
+          <tbody>
+          {% for user in users %}
+            <tr>
+              <td class="fw-semibold">{{ user.name }}</td>
+              <td class="text-secondary">{{ user.email }}</td>
+              <td><span class="role">{{ user.role }}</span></td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.edit_user', user_id=user.id) }}">Editar</a>
+                <form class="d-inline" method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" onsubmit="return confirm('Tem certeza de que deseja excluir este usuário?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="empty-state"><div class="empty-icon">♙</div><strong>Nenhum usuário cadastrado</strong><p class="text-secondary mb-0">Use o formulário para adicionar o primeiro usuário.</p></div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
