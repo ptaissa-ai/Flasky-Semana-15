@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Cadastro | Flasky{% endblock %}
+{% block content %}<div class="row justify-content-center"><div class="col-md-7 col-lg-6"><section class="panel">
+<p class="eyebrow">NOVO CADASTRO</p><h1 class="section-title">Criar conta</h1>
+<form method="POST">{{ form.hidden_tag() }}
+{% for field in [form.name, form.username, form.email, form.password, form.password2] %}
+<div class="mb-3">{{ field.label(class="form-label") }}{{ field(class="form-control") }}
+{% for e in field.errors %}<div class="field-error">{{ e }}</div>{% endfor %}</div>
+{% endfor %}
+{{ form.submit(class="btn btn-primary w-100") }}</form>
+<p class="small text-secondary mt-3 mb-0">Já possui uma conta? <a href="{{ url_for('auth.login') }}">Faça login</a>.</p>
+</section></div></div>{% endblock %}

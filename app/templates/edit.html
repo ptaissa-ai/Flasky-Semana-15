@@ -1,19 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Editar usuário | Flasky{% endblock %}
-{% block content %}
-<div class="row justify-content-center"><div class="col-lg-6">
-  <section class="panel">
-    <p class="eyebrow">GERENCIAMENTO</p><h1 class="section-title">Editar usuário</h1>
-    <p class="text-secondary">Atualize as informações de {{ user.name }}.</p>
-    <form method="POST">
-      {{ form.hidden_tag() }}
-      <div class="mb-3">{{ form.name.label(class="form-label") }}{{ form.name(class="form-control") }}
-        {% for error in form.name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}</div>
-      <div class="mb-3">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}
-        {% for error in form.email.errors %}<div class="field-error">{{ error }}</div>{% endfor %}</div>
-      {{ form.submit(class="btn btn-primary") }}
-      <a class="btn btn-light ms-2" href="{{ url_for('main.index') }}">Cancelar</a>
-    </form>
-  </section>
-</div></div>
-{% endblock %}
+{% block content %}<div class="row justify-content-center"><div class="col-lg-6"><section class="panel">
+<h1 class="section-title">Editar usuário</h1><form method="POST">{{ form.hidden_tag() }}
+{% for field in [form.name, form.username, form.email] %}
+<div class="mb-3">{{ field.label(class="form-label") }}{{ field(class="form-control") }}
+{% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}</div>
+{% endfor %}
+{{ form.submit(class="btn btn-primary") }} <a class="btn btn-light ms-2" href="{{ url_for('main.index') }}">Cancelar</a>
+</form></section></div></div>{% endblock %}

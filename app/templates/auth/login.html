@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Entrar | Flasky{% endblock %}
+{% block content %}<div class="row justify-content-center"><div class="col-md-6 col-lg-5"><section class="panel">
+<p class="eyebrow">BEM-VINDO DE VOLTA</p><h1 class="section-title">Entrar na sua conta</h1>
+<form method="POST">{{ form.hidden_tag() }}
+<div class="mb-3">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control", placeholder="voce@exemplo.com") }}
+{% for e in form.email.errors %}<div class="field-error">{{ e }}</div>{% endfor %}</div>
+<div class="mb-3">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}
+{% for e in form.password.errors %}<div class="field-error">{{ e }}</div>{% endfor %}</div>
+<div class="form-check mb-3">{{ form.remember_me(class="form-check-input") }}{{ form.remember_me.label(class="form-check-label") }}</div>
+{{ form.submit(class="btn btn-primary w-100") }}</form>
+<p class="small text-secondary mt-3 mb-0">Ainda não tem conta? <a href="{{ url_for('auth.register') }}">Cadastre-se</a>.</p>
+</section></div></div>{% endblock %}

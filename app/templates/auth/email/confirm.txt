@@ -1,0 +1,8 @@
+Olá, {{ user.username }}!
+
+Bem-vindo(a) ao Flasky.
+
+Para confirmar sua conta, acesse:
+{{ confirm_url }}
+
+Equipe Flasky
