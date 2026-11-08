@@ -27,3 +27,16 @@ class RegistrationForm(FlaskForm):
     def validate_username(self, field):
         if User.query.filter_by(username=field.data).first():
             raise ValidationError("Este nome de usuário já está em uso.")
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField("E-mail", validators=[DataRequired(), Email(), Length(max=120)])
+    submit = SubmitField("Enviar link")
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField("Nova senha", validators=[DataRequired(), Length(min=8, max=128)])
+    password2 = PasswordField("Confirme a nova senha", validators=[
+        DataRequired(), EqualTo("password", message="As senhas precisam ser iguais.")
+    ])
+    submit = SubmitField("Salvar nova senha")

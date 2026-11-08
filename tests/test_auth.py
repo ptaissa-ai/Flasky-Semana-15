@@ -74,3 +74,28 @@ class AuthenticationTest(unittest.TestCase):
             user.email = "novo@example.com"
             self.assertFalse(user.confirm(token))
             self.assertFalse(user.confirmed)
+
+    @patch("app.email_service.requests.post")
+    def test_reset_link_changes_password_once(self, send):
+        send.return_value.status_code = 202
+        with self.app.app_context():
+            user = User(name="Ana", username="ana", email="ana@example.com", confirmed=True)
+            user.password = "senha-antiga"
+            db.session.add(user)
+            db.session.commit()
+
+        self.assertIn("Esqueci minha senha", self.client.get("/auth/login").text)
+        self.post("/auth/esqueci-senha", {"email": "outro@example.com"})
+        send.assert_not_called()
+        self.post("/auth/esqueci-senha", {"email": "ana@example.com"})
+        payload = send.call_args.kwargs["json"]
+        link = re.search(r"https://example.com/auth/redefinir-senha/\S+", payload["content"][0]["value"]).group()
+        path = urlsplit(link).path
+        self.assertEqual(self.client.post(path).status_code, 400)
+        response = self.post(path, {"password": "senha-nova", "password2": "senha-nova"})
+        self.assertEqual(response.location, "/auth/login")
+        self.assertEqual(self.client.get(path).location, "/auth/esqueci-senha")
+        with self.app.app_context():
+            user = db.session.scalar(db.select(User))
+            self.assertFalse(user.verify_password("senha-antiga"))
+            self.assertTrue(user.verify_password("senha-nova"))

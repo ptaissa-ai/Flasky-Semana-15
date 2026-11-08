@@ -1,11 +1,14 @@
-from flask import render_template, redirect, url_for, flash, request, session
+from flask import render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, current_user, login_required
 from sqlalchemy.exc import IntegrityError
 from app import db
 from app.models import User
 from app.auth import auth
-from app.auth.forms import LoginForm, RegistrationForm
-from app.email_service import send_confirmation_email
+from app.auth.forms import LoginForm, RegistrationForm, ForgotPasswordForm, ResetPasswordForm
+from app.email_service import send_confirmation_email, send_password_reset_email
+from hashlib import sha256
+from itsdangerous import BadSignature, URLSafeTimedSerializer
+from werkzeug.security import generate_password_hash
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
@@ -103,3 +106,53 @@ def before_request():
             and request.blueprint != "auth"
             and request.endpoint != "static"):
         return redirect(url_for("auth.unconfirmed"))
+
+
+def password_reset_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="password-reset")
+
+
+@auth.route("/esqueci-senha", methods=["GET", "POST"])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = db.session.scalar(db.select(User).filter_by(email=form.email.data.strip().lower()))
+        if user is not None:
+            token = password_reset_serializer().dumps([
+                user.id, user.email, sha256(user.password_hash.encode()).hexdigest()
+            ])
+            send_password_reset_email(user, token)
+        flash("Se o e-mail estiver cadastrado, você receberá um link. Confira também o spam.", "info")
+        return redirect(url_for("auth.login"))
+    return render_template("auth/password_reset.html", form=form, title="Esqueci minha senha")
+
+
+@auth.route("/redefinir-senha/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    try:
+        user_id, email, fingerprint = password_reset_serializer().loads(token, max_age=1800)
+    except (BadSignature, ValueError, TypeError):
+        user = None
+    else:
+        user = db.session.get(User, user_id)
+        if user and (user.email != email or sha256(user.password_hash.encode()).hexdigest() != fingerprint):
+            user = None
+
+    if user is None:
+        flash("O link expirou ou já foi usado. Solicite outro.", "warning")
+        return redirect(url_for("auth.forgot_password"))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        result = db.session.execute(db.update(User).where(
+            User.id == user.id, User.email == email, User.password_hash == user.password_hash
+        ).values(password_hash=generate_password_hash(form.password.data)))
+        if result.rowcount != 1:
+            db.session.rollback()
+            flash("O link expirou ou já foi usado. Solicite outro.", "warning")
+            return redirect(url_for("auth.forgot_password"))
+        db.session.commit()
+        logout_user()
+        flash("Senha alterada. Entre com a nova senha.", "success")
+        return redirect(url_for("auth.login"))
+    return render_template("auth/password_reset.html", form=form, title="Redefinir senha")
