@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Confirmar conta | Flasky{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Confirmar conta</h1>
+  <p>Confirme a conta de {{ current_user.username }} para liberar o acesso.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-primary">Confirmar minha conta</button>
+  </form>
+</section>
+{% endblock %}

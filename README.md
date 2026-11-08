@@ -1,51 +1,48 @@
-# Flasky — Semana 15 (Autenticação)
+# Flasky — Semana 15 · Autenticação
 
-Projeto acadêmico Flask com gerenciamento de usuários e autenticação, baseado nos tópicos da Aula 090 — Autenticação de usuário.
+Aplicação acadêmica baseada na Aula 090. O pacote `app/auth` concentra cadastro, login por e-mail, opção de manter conectado, logout e confirmação de conta. Werkzeug armazena o hash da senha, Flask-Login gerencia a sessão e itsdangerous assina links válidos por 24 horas. O SendGrid envia os links por HTTPS. Contas pendentes podem entrar para confirmar ou solicitar outro link, mas o painel exige uma conta confirmada.
 
-## Funcionalidades
-- Cadastro com nome, nome de usuário, e-mail e senha.
-- Hashing de senha com Werkzeug (`generate_password_hash` e `check_password_hash`).
-- Login por e-mail e senha, opção de manter conectado e logout com Flask-Login.
-- Blueprint separado para autenticação (`app/auth`).
-- Proteção das rotas de gerenciamento com `login_required`.
-- Confirmação de conta por token assinado com itsdangerous e envio SMTP.
-- Reenvio de e-mail de confirmação.
-- Listagem, edição e exclusão de usuários após login e confirmação.
-- SQLite, Flask-SQLAlchemy e proteção CSRF.
-
-## Execução local
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python flask_app.py
-```
-Acesse http://127.0.0.1:5000.
-
-## Configuração de e-mail
-Configure no ambiente `SECRET_KEY`, `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD` e `MAIL_DEFAULT_SENDER`. Sem SMTP configurado, o cadastro é criado, mas a mensagem de confirmação não é enviada. Não publique senhas ou chaves no GitHub.
+O pacote `app/main` contém o painel. Uma conta comum pode editar o próprio perfil. Um administrador pode listar, editar e excluir outras contas. Alterar um endereço exige confirmar o novo e-mail.
 
 ## PythonAnywhere
-1. Bash:
+
+No console Bash:
+
 ```bash
-cd ~/Flasky-Semana-15
-workon flasky-venv
-pip install --no-cache-dir -r requirements.txt
+cd ~
+git clone https://github.com/ptaissa-ai/Flasky-Semana-15.git
+cd Flasky-Semana-15
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.example .env
+chmod 600 .env
+python -c 'import secrets; print(secrets.token_hex(32))'
 ```
-2. Web > Code: source code e working directory em `/home/SEU_USUARIO/Flasky-Semana-15`.
-3. Virtualenv: `/home/SEU_USUARIO/.virtualenvs/flasky-venv`.
-4. WSGI:
-```python
-import sys
-path = '/home/SEU_USUARIO/Flasky-Semana-15'
-if path not in sys.path:
-    sys.path.insert(0, path)
-from flask_app import app as application
+
+Abra `.env` em **Files**. Use a chave gerada em `SECRET_KEY` e copie somente os valores de `API_KEY` e `API_FROM` da configuração privada da Semana 14, se ainda estiverem válidos. Em `APP_BASE_URL`, coloque o endereço HTTPS exibido na aba **Web**. Mantenha `.env` fora do Git.
+
+Em **Web**, aponte **Source code** e **Working directory** para `/home/taissapieri/Flasky-Semana-15` e **Virtualenv** para `/home/taissapieri/Flasky-Semana-15/venv`. A versão Python precisa corresponder à do ambiente. Copie o conteúdo de `wsgi_pythonanywhere.py` para o arquivo WSGI indicado na aba Web. Caso exista um mapeamento de `/static/`, aponte-o para `/home/taissapieri/Flasky-Semana-15/app/static`. Clique em **Reload**. Ao atualizar a aplicação existente, o endereço atual passa a exibir a Semana 15.
+
+A Semana 15 usa seu próprio SQLite `flasky.db`, criado na primeira execução. Cadastre uma conta nova. O banco da Semana 14 tem outro esquema e seus usuários não têm senhas.
+
+## Teste no site
+
+1. Crie uma conta com um e-mail que você controla e tente entrar antes de confirmar. O painel deve pedir confirmação.
+2. Abra o link recebido, entre na conta se for solicitado e clique em **Confirmar minha conta**.
+3. Confira a saudação, edite seu perfil e saia.
+4. Para testar o painel administrativo, promova uma conta já confirmada com o ambiente virtual ativo:
+
+```bash
+python -m flask --app flask_app promover-admin seu-email@exemplo.com
 ```
-5. Configure as variáveis de ambiente no WSGI ou no mecanismo de configuração disponível na sua conta e clique Reload.
 
-## Atenção ao banco de dados existente
-O `db.create_all()` cria tabelas ausentes, mas não altera tabelas antigas. Esta versão adiciona `username`, `password_hash` e `confirmed` ao modelo User. Se você já executou a versão anterior e o arquivo `flasky.db` antigo existir, faça backup e, se não houver dados que precise preservar, remova esse banco antigo antes de iniciar a versão nova. Para preservar dados, crie uma migração de banco antes de atualizar.
+O SendGrid precisa de uma chave com permissão Mail Send e remetente verificado. Se o envio falhar, o cadastro fica pendente. Após corrigir a configuração, entre e use **Reenviar e-mail de confirmação**.
 
-## Observação de segurança
-Este projeto é didático. O exemplo permite que qualquer conta autenticada e confirmada acesse o gerenciamento de usuários, conforme o escopo simplificado da aula. Para uso real, implemente autorização por perfil (administrador) antes de permitir edição e exclusão de outras contas.
+## Rodar localmente
+
+Instale as dependências e execute `python -m flask --app flask_app run`. Para testar e-mail localmente, configure `APP_BASE_URL=http://127.0.0.1:5000` e credenciais de envio válidas. O teste automatizado usa SQLite em memória e simula a API do SendGrid.
+
+```bash
+python -m unittest discover -s tests -v
+```

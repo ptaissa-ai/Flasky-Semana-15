@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from hashlib import sha256
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
@@ -15,7 +16,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="User")
     confirmed = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     @property
     def password(self):
@@ -30,12 +31,12 @@ class User(UserMixin, db.Model):
 
     def generate_confirmation_token(self):
         serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
-        return serializer.dumps(self.id, salt="account-confirmation")
+        return serializer.dumps([self.id, self.email, sha256(self.password_hash.encode()).hexdigest()], salt="account-confirmation")
 
     def confirm(self, token):
         serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         try:
-            user_id = serializer.loads(
+            identity = serializer.loads(
                 token,
                 salt="account-confirmation",
                 max_age=current_app.config["CONFIRMATION_MAX_AGE"]
@@ -43,7 +44,7 @@ class User(UserMixin, db.Model):
         except (BadSignature, SignatureExpired):
             return False
 
-        if user_id != self.id:
+        if identity != [self.id, self.email, sha256(self.password_hash.encode()).hexdigest()]:
             return False
         self.confirmed = True
         db.session.add(self)
