@@ -1,0 +1,6 @@
+Olá, {{ user.username }}!
+
+Use o link abaixo para escolher uma nova senha. Ele é válido por 30 minutos.
+{{ reset_url }}
+
+Se você não fez este pedido, ignore a mensagem.

@@ -1,13 +1,17 @@
-from flask import render_template, redirect, url_for, flash, session
+from flask import render_template, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from app import db
 from app.models import User
 from app.main import main
+from app.email_service import send_confirmation_email
 
 @main.route("/")
 def index():
-    users = User.query.order_by(User.id.desc()).all() if current_user.is_authenticated and current_user.confirmed else []
+    users = []
+    if current_user.is_authenticated and current_user.confirmed:
+        users = (User.query.order_by(User.id.desc()).all()
+                 if current_user.role == "Administrator" else [current_user])
     return render_template("index.html", users=users)
 
 @main.route("/editar/<int:user_id>", methods=["GET", "POST"])
@@ -15,8 +19,9 @@ def index():
 def edit_user(user_id):
     if not current_user.confirmed:
         return redirect(url_for("auth.unconfirmed"))
-    user = User.query.get_or_404(user_id)
-    # Formulário simples reaproveitando os campos de cadastro, sem alterar senha.
+    user = db.get_or_404(User, user_id)
+    if user.id != current_user.id and current_user.role != "Administrator":
+        abort(403)
     from flask_wtf import FlaskForm
     from wtforms import StringField, SubmitField
     from wtforms.validators import DataRequired, Email, Length
@@ -28,11 +33,21 @@ def edit_user(user_id):
     form = EditForm()
     if form.validate_on_submit():
         user.name = form.name.data.strip()
-        user.email = form.email.data.lower().strip()
+        new_email = form.email.data.lower().strip()
+        email_changed = user.email != new_email
+        if email_changed:
+            user.email = new_email
+            user.confirmed = False
         user.username = form.username.data.strip()
         try:
             db.session.commit()
-            flash("Usuário atualizado.", "success")
+            if email_changed:
+                sent = send_confirmation_email(user)
+                message = ("Confirme o novo endereço pelo link enviado." if sent else
+                           "Endereço alterado. Entre com o novo e-mail e solicite o reenvio da confirmação.")
+                flash(message, "success" if sent else "warning")
+            else:
+                flash("Usuário atualizado.", "success")
             return redirect(url_for("main.index"))
         except IntegrityError:
             db.session.rollback()
@@ -46,7 +61,9 @@ def edit_user(user_id):
 def delete_user(user_id):
     if not current_user.confirmed:
         return redirect(url_for("auth.unconfirmed"))
-    user = User.query.get_or_404(user_id)
+    if current_user.role != "Administrator":
+        abort(403)
+    user = db.get_or_404(User, user_id)
     if user.id == current_user.id:
         flash("Você não pode excluir a própria conta enquanto estiver conectado.", "warning")
         return redirect(url_for("main.index"))

@@ -3,5 +3,8 @@
 {% block content %}<div class="row justify-content-center"><div class="col-md-7"><section class="panel text-center">
 <p class="eyebrow">CONFIRMAÇÃO DE CONTA</p><h1 class="section-title">Confirme seu endereço de e-mail</h1>
 <p class="text-secondary">Sua conta ainda não foi confirmada. Acesse o link enviado para seu e-mail para liberar o acesso ao sistema.</p>
-<a class="btn btn-primary" href="{{ url_for('auth.resend_confirmation') }}">Reenviar e-mail de confirmação</a>
+<form method="post" action="{{ url_for('auth.resend_confirmation') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-primary">Reenviar e-mail de confirmação</button>
+</form>
 </section></div></div>{% endblock %}

@@ -1,3 +1,4 @@
+import click
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
@@ -28,5 +29,16 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+
+    @app.cli.command("promover-admin")
+    @click.argument("email")
+    def promote_admin(email):
+        """Promove uma conta confirmada a administradora."""
+        user = db.session.scalar(db.select(models.User).filter_by(email=email.strip().lower()))
+        if user is None or not user.confirmed:
+            raise click.ClickException("Cadastre e confirme essa conta primeiro.")
+        user.role = "Administrator"
+        db.session.commit()
+        click.echo("Conta promovida a administradora.")
 
     return app

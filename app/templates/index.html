@@ -7,15 +7,17 @@
 {% if current_user.is_authenticated and current_user.confirmed %}
 <section class="panel">
 <div class="d-flex justify-content-between align-items-center mb-3">
-<div><h2 class="section-title mb-1">Relação de usuários</h2><p class="text-secondary small mb-0">{{ users|length }} usuário(s) cadastrado(s)</p></div>
+<div><h2 class="section-title mb-1">{{ "Relação de usuários" if current_user.role == "Administrator" else "Minha conta" }}</h2><p class="text-secondary small mb-0">{{ users|length }} usuário(s) cadastrado(s)</p></div>
 <span class="count-pill">{{ users|length }}</span></div>
 <div class="table-responsive"><table class="table align-middle">
 <thead><tr><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Função</th><th>Ações</th></tr></thead><tbody>
 {% for user in users %}<tr><td class="fw-semibold">{{ user.name }}</td><td>{{ user.username }}</td><td>{{ user.email }}</td>
 <td><span class="role">{{ user.role }}</span></td><td class="text-nowrap">
 <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.edit_user', user_id=user.id) }}">Editar</a>
+{% if current_user.role == "Administrator" and current_user.id != user.id %}
 <form class="d-inline" method="POST" action="{{ url_for('main.delete_user', user_id=user.id) }}" onsubmit="return confirm('Deseja excluir este usuário?');">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Excluir</button></form>
+{% endif %}
 </td></tr>{% endfor %}</tbody></table></div>
 </section>
 {% else %}

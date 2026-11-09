@@ -1,47 +1,47 @@
-import smtplib
-from email.message import EmailMessage
+import requests
 from flask import current_app, render_template, url_for
 
-def send_email(to, subject, template, **kwargs):
-    cfg = current_app.config
-    if cfg.get("MAIL_SUPPRESS_SEND"):
-        current_app.logger.info("Envio de e-mail suprimido: %s", subject)
-        return False
-
-    required = [cfg.get("MAIL_SERVER"), cfg.get("MAIL_USERNAME"),
-                cfg.get("MAIL_PASSWORD"), cfg.get("MAIL_DEFAULT_SENDER") or cfg.get("MAIL_USERNAME")]
-    if not all(required):
-        current_app.logger.warning(
-            "SMTP não configurado. Configure MAIL_SERVER, MAIL_USERNAME, "
-            "MAIL_PASSWORD e MAIL_DEFAULT_SENDER."
-        )
-        return False
-
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = cfg.get("MAIL_DEFAULT_SENDER") or cfg["MAIL_USERNAME"]
-    message["To"] = to
-    message.set_content(render_template(template + ".txt", **kwargs))
-    message.add_alternative(render_template(template + ".html", **kwargs), subtype="html")
-
-    try:
-        with smtplib.SMTP(cfg["MAIL_SERVER"], cfg["MAIL_PORT"], timeout=20) as server:
-            if cfg.get("MAIL_USE_TLS"):
-                server.starttls()
-            server.login(cfg["MAIL_USERNAME"], cfg["MAIL_PASSWORD"])
-            server.send_message(message)
-        return True
-    except Exception:
-        current_app.logger.exception("Não foi possível enviar o e-mail.")
-        return False
 
 def send_confirmation_email(user):
-    token = user.generate_confirmation_token()
-    confirm_url = url_for("auth.confirm", token=token, _external=True)
-    return send_email(
-        user.email,
-        "Confirme sua conta Flasky",
-        "auth/email/confirm",
-        user=user,
-        confirm_url=confirm_url
+    return send_account_email(user, "Confirme sua conta Flasky", "confirm",
+                              "auth.confirm", user.generate_confirmation_token())
+
+
+def send_password_reset_email(user, token):
+    return send_account_email(user, "Redefina sua senha Flasky", "reset",
+                              "auth.reset_password", token)
+
+
+def send_account_email(user, subject, template, endpoint, token):
+    cfg = current_app.config
+    if not cfg["API_KEY"] or not cfg["API_FROM"]:
+        current_app.logger.warning("Configure API_KEY e API_FROM para enviar e-mails.")
+        return False
+
+    base = cfg["APP_BASE_URL"]
+    link = base + url_for(endpoint, token=token) if base else url_for(
+        endpoint, token=token, _external=True
     )
+    context = {"user": user, "confirm_url": link, "reset_url": link}
+    payload = {
+        "personalizations": [{"to": [{"email": user.email}]}],
+        "from": {"email": cfg["API_FROM"], "name": "Flasky — Semana 15"},
+        "subject": subject,
+        "content": [
+            {"type": "text/plain", "value": render_template(f"auth/email/{template}.txt", **context)},
+            {"type": "text/html", "value": render_template(f"auth/email/{template}.html", **context)},
+        ],
+    }
+    try:
+        response = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={"Authorization": "Bearer " + cfg["API_KEY"]},
+            json=payload, timeout=15,
+        )
+    except requests.RequestException:
+        current_app.logger.warning("Falha de comunicação com SendGrid.")
+        return False
+    if response.status_code != 202:
+        current_app.logger.warning("SendGrid recusou o e-mail (HTTP %s).", response.status_code)
+        return False
+    return True
