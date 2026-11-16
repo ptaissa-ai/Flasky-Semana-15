@@ -5,7 +5,7 @@ from app import db
 from app.models import User
 from app.auth import auth
 from app.auth.forms import LoginForm, RegistrationForm, ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm
-from app.email_service import send_confirmation_email, send_password_reset_email
+from app.email_service import send_confirmation_email, send_password_reset_email, send_registration_notice
 from hashlib import sha256
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash
@@ -57,6 +57,7 @@ def register():
             return render_template("auth/register.html", form=form)
 
         sent = send_confirmation_email(user)
+        send_registration_notice(user)
         if sent:
             flash("Cadastro realizado! Confira seu e-mail para confirmar a conta.", "success")
         else:

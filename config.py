@@ -14,6 +14,11 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").strip()
+    BREVO_FROM = os.environ.get("BREVO_FROM", "").strip()
+    STUDENT_EMAIL = os.environ.get("STUDENT_EMAIL", "").strip()
+    PROFESSOR_EMAIL = "flaskaulasweb@zohomail.com"
+
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
     RESEND_FROM = os.environ.get("RESEND_FROM", "onboarding@resend.dev").strip()
     API_KEY = os.environ.get("API_KEY", "").strip()

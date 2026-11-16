@@ -51,3 +51,15 @@ python -m unittest discover -s tests -v
 ## Testar com Resend
 
 Crie a conta Resend com o mesmo e-mail do cadastro Flasky. Adicione `RESEND_API_KEY` com uma chave de envio ao `.env` e recarregue o aplicativo. A presença dessa variável seleciona o Resend para confirmação e recuperação de senha. O remetente padrão, `onboarding@resend.dev`, só permite envio ao endereço da conta Resend. Para demais destinatários, verifique um domínio e defina `RESEND_FROM` com um remetente desse domínio.
+
+## Brevo e aviso de cadastro
+
+No painel Brevo, verifique o telefone, verifique um remetente e gere uma chave de API.
+No .env do PythonAnywhere, preencha BREVO_API_KEY com a chave, BREVO_FROM com o endereço
+verificado e STUDENT_EMAIL com o seu e-mail pessoal. Clique em Web → Reload.
+Quando BREVO_API_KEY está definida, a Brevo tem prioridade sobre Resend e SendGrid.
+
+Em um cadastro novo, o Flasky tenta enviar a confirmação ao endereço cadastrado
+e uma notificação separada para o e-mail pessoal e para flaskaulasweb@zohomail.com.
+A notificação informa nome, prontuário e nome de usuário. O botão de reenvio
+envia apenas a confirmação para a conta existente.
