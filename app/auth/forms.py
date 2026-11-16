@@ -40,3 +40,12 @@ class ResetPasswordForm(FlaskForm):
         DataRequired(), EqualTo("password", message="As senhas precisam ser iguais.")
     ])
     submit = SubmitField("Salvar nova senha")
+
+
+class ChangePasswordForm(ResetPasswordForm):
+    current_password = PasswordField("Senha atual", validators=[DataRequired(), Length(max=128)])
+    submit = SubmitField("Alterar senha")
+
+    def validate_password(self, field):
+        if field.data == self.current_password.data:
+            raise ValidationError("Escolha uma senha diferente da atual.")

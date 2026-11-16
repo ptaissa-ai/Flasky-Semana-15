@@ -25,7 +25,7 @@ def send_account_email(user, subject, template, endpoint, token):
     context = {"user": user, "confirm_url": link, "reset_url": link}
     payload = {
         "personalizations": [{"to": [{"email": user.email}]}],
-        "from": {"email": cfg["API_FROM"], "name": "Flasky — Semana 15"},
+        "from": {"email": cfg["API_FROM"], "name": "Flasky — Semana 16"},
         "subject": subject,
         "content": [
             {"type": "text/plain", "value": render_template(f"auth/email/{template}.txt", **context)},

@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from app import db
 from app.models import User
 from app.auth import auth
-from app.auth.forms import LoginForm, RegistrationForm, ForgotPasswordForm, ResetPasswordForm
+from app.auth.forms import LoginForm, RegistrationForm, ForgotPasswordForm, ResetPasswordForm, ChangePasswordForm
 from app.email_service import send_confirmation_email, send_password_reset_email
 from hashlib import sha256
 from itsdangerous import BadSignature, URLSafeTimedSerializer
@@ -113,6 +113,7 @@ def password_reset_serializer():
 
 
 @auth.route("/esqueci-senha", methods=["GET", "POST"])
+@auth.route("/reset", methods=["GET", "POST"])
 def forgot_password():
     form = ForgotPasswordForm()
     if form.validate_on_submit():
@@ -156,3 +157,30 @@ def reset_password(token):
         flash("Senha alterada. Entre com a nova senha.", "success")
         return redirect(url_for("auth.login"))
     return render_template("auth/password_reset.html", form=form, title="Redefinir senha")
+
+
+@auth.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if not current_user.confirmed:
+        return redirect(url_for("auth.unconfirmed"))
+
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        old_hash = current_user.password_hash
+        if not current_user.verify_password(form.current_password.data):
+            form.current_password.errors.append("A senha atual está incorreta.")
+        else:
+            result = db.session.execute(db.update(User).where(
+                User.id == current_user.id, User.password_hash == old_hash
+            ).values(password_hash=generate_password_hash(form.password.data)))
+            if result.rowcount == 1:
+                db.session.commit()
+                logout_user()
+                flash("Senha alterada. Entre com a nova senha.", "success")
+                return redirect(url_for("auth.login"))
+            db.session.rollback()
+            flash("A senha foi alterada em outra sessão. Entre novamente.", "warning")
+            logout_user()
+            return redirect(url_for("auth.login"))
+    return render_template("auth/password_reset.html", form=form, title="Alterar senha")

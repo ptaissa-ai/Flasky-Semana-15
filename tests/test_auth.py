@@ -94,7 +94,26 @@ class AuthenticationTest(unittest.TestCase):
         self.assertEqual(self.client.post(path).status_code, 400)
         response = self.post(path, {"password": "senha-nova", "password2": "senha-nova"})
         self.assertEqual(response.location, "/auth/login")
-        self.assertEqual(self.client.get(path).location, "/auth/esqueci-senha")
+        self.assertEqual(self.client.get(path).location, "/auth/reset")
+        with self.app.app_context():
+            user = db.session.scalar(db.select(User))
+            self.assertFalse(user.verify_password("senha-antiga"))
+            self.assertTrue(user.verify_password("senha-nova"))
+
+    def test_change_password_requires_current_password(self):
+        with self.app.app_context():
+            user = User(name="Ana", username="ana", email="ana@example.com", confirmed=True)
+            user.password = "senha-antiga"
+            db.session.add(user)
+            db.session.commit()
+
+        self.post("/auth/login", {"email": "ana@example.com", "password": "senha-antiga"})
+        path = "/auth/change-password"
+        fields = {"password": "senha-nova", "password2": "senha-nova"}
+        response = self.post(path, {**fields, "current_password": "incorreta"})
+        self.assertIn("A senha atual está incorreta.", response.text)
+        response = self.post(path, {**fields, "current_password": "senha-antiga"})
+        self.assertEqual(response.location, "/auth/login")
         with self.app.app_context():
             user = db.session.scalar(db.select(User))
             self.assertFalse(user.verify_password("senha-antiga"))
