@@ -14,6 +14,8 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+    RESEND_FROM = os.environ.get("RESEND_FROM", "onboarding@resend.dev").strip()
     API_KEY = os.environ.get("API_KEY", "").strip()
     API_FROM = os.environ.get("API_FROM", "").strip()
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "").rstrip("/")

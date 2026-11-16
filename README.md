@@ -47,3 +47,7 @@ Instale as dependências e execute `python -m flask --app flask_app run`. Para t
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+## Testar com Resend
+
+Crie a conta Resend com o mesmo e-mail do cadastro Flasky. Adicione `RESEND_API_KEY` com uma chave de envio ao `.env` e recarregue o aplicativo. A presença dessa variável seleciona o Resend para confirmação e recuperação de senha. O remetente padrão, `onboarding@resend.dev`, só permite envio ao endereço da conta Resend. Para demais destinatários, verifique um domínio e defina `RESEND_FROM` com um remetente desse domínio.
